@@ -3,169 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Previsão do Tempo</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f0f8ff;
-      margin: 0;
-      padding: 20px;
-    }
-
-    h2 {
-      color: #333;
-    }
-
-    .location {
-      font-size: 1.1em;
-      margin-top: 10px;
-      font-weight: bold;
-      color: #555;
-    }
-
-    .forecast {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-
-    .day {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-      width: 120px;
-    }
-
-    .day img {
-      width: 60px;
-      height: 60px;
-    }
-
-    @media (max-width: 600px) {
-      .day {
-        width: 100%;
-        max-width: 300px;
-        margin: 0 auto;
-      }
-    }
-
-    .error {
-      color: red;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <h2>Previsão para os próximos 5 dias</h2>
-  <div id="location" class="location">Detectando sua localização...</div>
-  <div id="forecast" class="forecast"></div>
-  <div id="erro" class="error"></div>
-
-  <script>
-    const apiKey = "aa393a8b9e39b77a435714a6f531baa8"; // Coloque sua chave válida da OpenWeatherMap
-
-    function buscarPrevisao(lat, lon) {
-      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=pt_br&units=metric`;
-
-      fetch(forecastUrl)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error("Erro ao buscar previsão.");
-          }
-          return response.json();
-        })
-        .then(data => {
-          const cidade = data.city.name;
-          document.getElementById("location").textContent = `Local: ${cidade}`;
-
-          const forecastEl = document.getElementById("forecast");
-          forecastEl.innerHTML = "";
-          const daily = {};
-
-          data.list.forEach(item => {
-            const date = new Date(item.dt_txt);
-            const dayKey = date.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric" });
-
-            if (date.getHours() === 12 && !daily[dayKey]) {
-              daily[dayKey] = {
-                temp: item.main.temp.toFixed(1),
-                desc: item.weather[0].description,
-                icon: item.weather[0].icon
-              };
-            }
-          });
-
-          Object.keys(daily).slice(0, 5).forEach(day => {
-            const d = daily[day];
-            forecastEl.innerHTML += `
-              <div class="day">
-                <h3>${day}</h3>
-                <img src="https://openweathermap.org/img/wn/${d.icon}@2x.png" alt="${d.desc}">
-                <p>${d.temp}°C</p>
-                <p>${d.desc}</p>
-              </div>
-            `;
-          });
-        })
-        .catch(error => {
-          console.error("Erro:", error);
-          document.getElementById("erro").textContent = "Erro ao buscar a previsão do tempo.";
-        });
-    }
-
-    function buscarLocalizacaoNome(lat, lon) {
-      // Usando OpenWeatherMap reverse geocoding API
-      const reverseUrl = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`;
-
-      fetch(reverseUrl)
-        .then(response => response.json())
-        .then(data => {
-          if (data && data.length > 0) {
-            const local = data[0];
-            const nomeLocal = `${local.name}, ${local.state || ""}, ${local.country}`;
-            document.getElementById("location").textContent = `Local: ${nomeLocal}`;
-          }
-        })
-        .catch(() => {
-          document.getElementById("location").textContent = "Localização detectada, mas não foi possível obter o nome do local.";
-        });
-    }
-
-    function obterLocalizacao() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-
-            // Buscar nome da localização + previsão
-            buscarLocalizacaoNome(lat, lon);
-            buscarPrevisao(lat, lon);
-          },
-          erro => {
-            document.getElementById("erro").textContent = "Permissão de localização negada. Não foi possível obter a previsão.";
-            document.getElementById("location").textContent = "Localização não permitida.";
-          }
-        );
-      } else {
-        document.getElementById("erro").textContent = "Geolocalização não suportada pelo navegador.";
-        document.getElementById("location").textContent = "Geolocalização indisponível.";
-      }
-    }
-
-    // Inicia tudo
-    obterLocalizacao();
-  </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <title>Previsão do Tempo</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -176,6 +14,7 @@
     }
     h2 {
       color: #333;
+      margin-top: 30px;
     }
     .forecast {
       display: flex;
@@ -184,39 +23,98 @@
       margin-top: 20px;
       flex-wrap: wrap;
     }
-    .day {
+    .card {
       background: white;
       padding: 15px;
       border-radius: 10px;
       box-shadow: 0 3px 6px rgba(0,0,0,0.1);
       width: 120px;
     }
-    .day img {
-      width: 60px;
-      height: 60px;
+    .card img {
+      width: 50px;
+      height: 50px;
+    }
+    #chartContainer {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
     }
   </style>
 </head>
 <body>
+  <h2>Previsão do dia em gráfico</h2>
+  <div id="chartContainer">
+    <canvas id="tempChart"></canvas>
+  </div>
+
   <h2>Previsão para os próximos 5 dias</h2>
   <div id="forecast" class="forecast"></div>
 
   <script>
-    const apiKey = "aa393a8b9e39b77a435714a6f531baa8"; // coloque sua chave aqui (OpenWeatherMap)
+    const apiKey = "aa393a8b9e39b77a435714a6f531baa8";
     const cidade = "Belo Horizonte";
 
     fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${cidade}&appid=${apiKey}&lang=pt_br&units=metric`)
       .then(response => response.json())
       .then(data => {
+        console.log(data); // debug
+
         const forecastEl = document.getElementById("forecast");
         const daily = {};
 
+        // 🔹 Pegar previsões de hoje (primeiras 8 entradas = ~24h)
+        const hoje = data.list.slice(0, 8);
+        const horas = hoje.map(item => {
+          const date = new Date(item.dt_txt);
+          return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        });
+        const temps = hoje.map(item => item.main.temp.toFixed(1));
+
+        // Criar gráfico
+        const ctx = document.getElementById("tempChart").getContext("2d");
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: horas,
+            datasets: [{
+              label: "Temperatura (°C)",
+              data: temps,
+              borderColor: "#007bff",
+              backgroundColor: "rgba(0, 123, 255, 0.3)",
+              tension: 0.3,
+              fill: true,
+              pointRadius: 5,
+              pointBackgroundColor: "#007bff"
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true,
+                labels: { color: "#333" }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `${context.raw}°C`
+                }
+              }
+            },
+            scales: {
+              x: { ticks: { color: "#333" } },
+              y: { ticks: { color: "#333" } }
+            }
+          }
+        });
+
+        // 🔹 Previsão diária (5 dias)
         data.list.forEach(item => {
           const date = new Date(item.dt_txt);
           const day = date.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric" });
-
-          // Pega só a previsão do meio-dia para simplificar
-          if (date.getHours() === 12) {
+          if (!daily[day]) {
             daily[day] = {
               temp: item.main.temp.toFixed(1),
               desc: item.weather[0].description,
@@ -228,7 +126,7 @@
         Object.keys(daily).slice(0, 5).forEach(day => {
           const d = daily[day];
           forecastEl.innerHTML += `
-            <div class="day">
+            <div class="card">
               <h3>${day}</h3>
               <img src="https://openweathermap.org/img/wn/${d.icon}@2x.png" alt="${d.desc}">
               <p>${d.temp}°C</p>
@@ -241,4 +139,3 @@
   </script>
 </body>
 </html>
-
