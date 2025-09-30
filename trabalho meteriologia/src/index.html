@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Previsão do Tempo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f0f8ff;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      color: #333;
+    }
+    .forecast {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .day {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      width: 120px;
+    }
+    .day img {
+      width: 60px;
+      height: 60px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Previsão para os próximos 5 dias</h2>
+  <div id="forecast" class="forecast"></div>
+
+  <script>
+    const apiKey = "aa393a8b9e39b77a435714a6f531baa8"; // coloque sua chave aqui (OpenWeatherMap)
+    const cidade = "Belo Horizonte";
+
+    fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${cidade}&appid=${apiKey}&lang=pt_br&units=metric`)
+      .then(response => response.json())
+      .then(data => {
+        const forecastEl = document.getElementById("forecast");
+        const daily = {};
+
+        data.list.forEach(item => {
+          const date = new Date(item.dt_txt);
+          const day = date.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric" });
+
+          // Pega só a previsão do meio-dia para simplificar
+          if (date.getHours() === 12) {
+            daily[day] = {
+              temp: item.main.temp.toFixed(1),
+              desc: item.weather[0].description,
+              icon: item.weather[0].icon
+            };
+          }
+        });
+
+        Object.keys(daily).slice(0, 5).forEach(day => {
+          const d = daily[day];
+          forecastEl.innerHTML += `
+            <div class="day">
+              <h3>${day}</h3>
+              <img src="https://openweathermap.org/img/wn/${d.icon}@2x.png" alt="${d.desc}">
+              <p>${d.temp}°C</p>
+              <p>${d.desc}</p>
+            </div>
+          `;
+        });
+      })
+      .catch(error => console.error("Erro ao buscar previsão:", error));
+  </script>
+</body>
+</html>
